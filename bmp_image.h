@@ -35,7 +35,9 @@ class BMP : public Image
 {
     BMPHeader header;
     std::vector<uint8_t> data;
-
+    int BYTES_PER_PIXEL = 3;
+    int ALIGNMENT_BYTES = 4;
+    
 public:
     bool Load(const std::string& filename) override;
     bool Save(const std::string& filename) override;

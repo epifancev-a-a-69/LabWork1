@@ -25,8 +25,8 @@ bool BMP::Load(const std::string& filename)
         header.height = -header.height;
     }
 
-    int row_size = ((width * 3 + 3) / 4) * 4;
-    int padding = row_size - width * 3;
+    int row_size = ((width * BYTES_PER_PIXEL + ALIGNMENT_BYTES - 1) / ALIGNMENT_BYTES) * ALIGNMENT_BYTES;
+    int padding = row_size - width * BYTES_PER_PIXEL;
 
     data.resize(static_cast<size_t>(row_size) * static_cast<size_t>(height));
     file.seekg(header.offset);
@@ -34,7 +34,7 @@ bool BMP::Load(const std::string& filename)
     for (int y = 0; y < height; ++y)
     {
         file.read(reinterpret_cast<char*>(&data[static_cast<size_t>(y) * static_cast<size_t>(row_size)]),
-                  static_cast<std::streamsize>(width * 3));
+                  static_cast<std::streamsize>(width * BYTES_PER_PIXEL));
         if (padding > 0)
         {
             file.seekg(padding, std::ios::cur);
@@ -51,8 +51,8 @@ bool BMP::Save(const std::string& filename)
 
     int width = Width();
     int height = Height();
-    int row_size = ((width * 3 + 3) / 4) * 4;
-    int padding = row_size - width * 3;
+    int row_size = ((width * BYTES_PER_PIXEL + ALIGNMENT_BYTES - 1) / ALIGNMENT_BYTES) * ALIGNMENT_BYTES;
+    int padding = row_size - width * BYTES_PER_PIXEL;
 
     BMPHeader save_header = header;
     save_header.image_size = static_cast<uint32_t>(row_size * height);
@@ -68,7 +68,7 @@ bool BMP::Save(const std::string& filename)
     for (int y = 0; y < height; ++y)
     {
         file.write(reinterpret_cast<const char*>(&data[static_cast<size_t>(y) * static_cast<size_t>(row_size)]),
-                   static_cast<std::streamsize>(width * 3));
+                   static_cast<std::streamsize>(width * BYTES_PER_PIXEL));
         for (int i = 0; i < padding; ++i)
         {
             file.put(0);
@@ -85,7 +85,7 @@ BMP BMP::RotateCW() const
     result.header.width = h;
     result.header.height = w;
 
-    int new_row_size = ((h * 3 + 3) / 4) * 4;
+    int new_row_size = ((h * BYTES_PER_PIXEL + ALIGNMENT_BYTES - 1) / ALIGNMENT_BYTES) * ALIGNMENT_BYTES;
     result.data.resize(new_row_size * w);
 
     for (int y = 0; y < h; ++y)
@@ -107,7 +107,7 @@ BMP BMP::RotateCCW() const
     result.header.width = h;
     result.header.height = w;
 
-    int new_row_size = ((h * 3 + 3) / 4) * 4;
+    int new_row_size = ((h * BYTES_PER_PIXEL + ALIGNMENT_BYTES - 1) / ALIGNMENT_BYTES) * ALIGNMENT_BYTES;
     result.data.resize(new_row_size * w);
 
     for (int y = 0; y < h; ++y)
@@ -124,7 +124,10 @@ BMP BMP::RotateCCW() const
 
 BMP BMP::GaussianFilter() const
 {
-    const double kernel[3][3] =
+    static constexpr double GAUSSIAN_SIGMA = 1.0;
+    static constexpr int KERNEL_SIZE = 3;
+    
+    const double kernel[KERNEL_SIZE][KERNEL_SIZE] =
     {
         {0.077847, 0.123317, 0.077847},
         {0.123317, 0.195346, 0.123317},
@@ -138,7 +141,7 @@ BMP BMP::GaussianFilter() const
     result.header.width = w;
     result.header.height = h;
 
-    int row_size = ((w * 3 + 3) / 4) * 4;
+    int row_size = ((w * BYTES_PER_PIXEL + ALIGNMENT_BYTES - 1) / ALIGNMENT_BYTES) * ALIGNMENT_BYTES;
     result.data.resize(row_size * h);
 
     for (int y = 0; y < h; ++y)
@@ -188,9 +191,9 @@ BMP BMP::GaussianFilter() const
 void BMP::SetPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
     int w = Width();
-    int row_size = ((w * 3 + 3) / 4) * 4;
-    size_t idx = static_cast<size_t>(y) * static_cast<size_t>(row_size) + static_cast<size_t>(x) * 3;
-
+    int row_size = ((w * BYTES_PER_PIXEL + ALIGNMENT_BYTES - 1) / ALIGNMENT_BYTES) * ALIGNMENT_BYTES;
+    size_t idx = static_cast<size_t>(y) * static_cast<size_t>(row_size) + static_cast<size_t>(x) * BYTES_PER_PIXEL;
+    
     if (idx + 2 < data.size())
     {
         data[idx] = b;
@@ -202,8 +205,8 @@ void BMP::SetPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 void BMP::GetPixel(int x, int y, uint8_t& r, uint8_t& g, uint8_t& b) const
 {
     int w = Width();
-    int row_size = ((w * 3 + 3) / 4) * 4;
-    size_t idx = static_cast<size_t>(y) * static_cast<size_t>(row_size) + static_cast<size_t>(x) * 3;
+    int row_size = ((w * BYTES_PER_PIXEL + ALIGNMENT_BYTES - 1) / ALIGNMENT_BYTES) * ALIGNMENT_BYTES;
+    size_t idx = static_cast<size_t>(y) * static_cast<size_t>(row_size) + static_cast<size_t>(x) * BYTES_PER_PIXEL;
 
     if (idx + 2 < data.size())
     {
