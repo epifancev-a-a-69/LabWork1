@@ -124,7 +124,6 @@ BMP BMP::RotateCCW() const
 
 BMP BMP::GaussianFilter() const
 {
-    static constexpr double GAUSSIAN_SIGMA = 1.0;
     static constexpr int KERNEL_SIZE = 3;
     
     const double kernel[KERNEL_SIZE][KERNEL_SIZE] =
